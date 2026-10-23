@@ -1,0 +1,21 @@
+{
+  "request_id": "REQ-CLAIM-2026-003",
+  "denial_notice": {
+    "claim_id": "CLM-77192-C",
+    "patient_name": "Dominic Rossi",
+    "patient_dob": "1982-08-30",
+    "member_id": "AET-3391024",
+    "payer_name": "Aetna Health",
+    "payer_id": "AETNA-003",
+    "date_of_service": "2026-02-05",
+    "billed_cpt": "99214",
+    "billed_cpt_description": "Office or other outpatient visit, established patient, moderate MDM",
+    "billed_icd10": "M54.5",
+    "billed_icd10_description": "Low back pain, unspecified",
+    "billed_amount": 215.00,
+    "denial_code": "CO-18",
+    "denial_reason": "Exact duplicate claim/service. Line item adjudicated as previously submitted or bundled under same-day procedure.",
+    "timely_filing_deadline_days": 180
+  },
+  "clinical_notes": "AMBULATORY ENCOUNTER & PROCEDURE NOTE\nPatient: Dominic Rossi | DOB: 08/30/1982 | DOS: 02/05/2026\nTreating Physician: Dr. Sarah Jenkins, MD (Physical Medicine & Rehabilitation, NPI: 1827364501)\nFacility: Metro Spine & Pain Care Specialists\n\nCHIEF COMPLAINT:\nFollow-up evaluation for severe refractory lumbosacral radiculopathy and pre-procedure evaluation for scheduled trigger point injections.\n\nEVALUATION & MANAGEMENT COMPONENT (Separate and Distinct - Modifier -25 justification):\nPatient evaluated in exam room 4 prior to any injection. Thorough interval medical history taken regarding new onset radiating numbness into left lateral calf. Medication reconciliation performed (adjusting gabapentin from 300mg TID to 600mg TID due to breakthrough pain). Comprehensive discussion of MRI findings (L4-L5 disc protrusion) and risks/benefits of corticosteroid intervention. Independent medical decision making of moderate complexity (MDM Level 4) executed distinctly prior to the injection procedure.\n\nPROCEDURE PERFORMED (CPT 20552):\nTrigger point injections, 2 muscles (left lumbar iliocostalis and left piriformis). Performed under strict sterile technique with 1% lidocaine 4ml total. Patient tolerated well without complication.\n\nBILLING & CODING JUSTIFICATION:\nThe Evaluation and Management service (CPT 99214-25) represents a significant, separately identifiable medical service above and beyond the usual pre-procedure and post-procedure work associated with CPT 20552. Both services occurred on the same date of service (02/05/2026) but warrant distinct unbundled reimbursement with appropriate Modifier -25 / -59 attachment.\n\nSigned: Sarah Jenkins, MD, PM&R (02/05/2026 15:15 EST)"
+}

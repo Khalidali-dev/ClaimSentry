@@ -1,0 +1,21 @@
+{
+  "request_id": "REQ-CLAIM-2026-002",
+  "denial_notice": {
+    "claim_id": "CLM-44820-B",
+    "patient_name": "Arthur Pendelton",
+    "patient_dob": "1954-11-23",
+    "member_id": "UHC-9938210",
+    "payer_name": "UnitedHealthcare Commercial",
+    "payer_id": "UHC-002",
+    "date_of_service": "2026-01-20",
+    "billed_cpt": "99244",
+    "billed_cpt_description": "Office or other outpatient consultation, moderate-to-high complexity, 60 minutes",
+    "billed_icd10": "E11.9",
+    "billed_icd10_description": "Type 2 diabetes mellitus without complications",
+    "billed_amount": 580.00,
+    "denial_code": "CO-16",
+    "denial_reason": "Claim/service lacks information or has submission/billing error(s) which is needed for adjudication. Missing supporting clinical consultation documentation.",
+    "timely_filing_deadline_days": 180
+  },
+  "clinical_notes": "SPECIALTY CONSULTATION NOTE\nPatient: Arthur Pendelton | DOB: 11/23/1954 | DOS: 01/20/2026\nConsulting Specialist: Dr. Evelyn Zhao, MD (Endocrinology & Metabolism, NPI: 1049281745)\nRequesting Physician: Dr. Robert Miller, MD (PCP, Internal Medicine, NPI: 1938472910)\nFacility: Valley Health Endocrinology Specialists\n\nREASON FOR CONSULTATION:\nFormal written referral received on 01/15/2026 from PCP Dr. Robert Miller requesting specialized endocrine opinion and management recommendations for brittle glycemic control (HbA1c 10.4% despite dual oral hypoglycemic therapy) and symptomatic diabetic polyneuropathy.\n\nHISTORY OF PRESENT ILLNESS:\n71-year-old male with poorly controlled Type 2 Diabetes Mellitus (ICD-10: E11.9) referred for expert evaluation. Reports recurrent fasting hyperglycemias (220-280 mg/dL) and painful distal bilateral lower extremity paresthesias.\n\nCOMPREHENSIVE EXAMINATION & COUNSELING (Total face-to-face duration: 62 minutes):\n- Comprehensive review of home glucose logs, nutritional habits, and medication adherence.\n- Neurological exam: Reduced vibration sensation bilaterally via 128Hz tuning fork, absent Achilles reflexes bilaterally.\n- Foot exam: Monofilament testing abnormal at 4/10 sites bilaterally, skin intact, pedal pulses 2+.\n\nASSESSMENT & PLAN:\n1. Type 2 Diabetes Mellitus with uncontrolled hyperglycemia (ICD-10: E11.69 / E11.9).\n2. Diabetic peripheral neuropathy (ICD-10: E11.40).\n3. Initiated basal insulin glargine 14 units nightly; titrated metformin to 1000 mg BID.\n4. Prescribed continuous glucose monitor (Dexcom G7) and referred for diabetic self-management education.\n\nWRITTEN CONSULTATION REPORT STATUS:\nA full formal 4-page written consultation report detailing diagnostic findings and therapeutic recommendations was transmitted via secure EHR direct messaging to requesting provider Dr. Robert Miller on 01/20/2026 at 16:30 EST.\n\nSigned: Evelyn Zhao, MD, Endocrinology (01/20/2026 16:45 EST)"
+}

@@ -1,0 +1,21 @@
+{
+  "request_id": "REQ-CLAIM-2026-001",
+  "denial_notice": {
+    "claim_id": "CLM-90281-A",
+    "patient_name": "Eleanor Vance",
+    "patient_dob": "1968-04-12",
+    "member_id": "ANT-8829104",
+    "payer_name": "Anthem Blue Cross Blue Shield",
+    "payer_id": "ANTHEM-001",
+    "date_of_service": "2026-02-14",
+    "billed_cpt": "71045",
+    "billed_cpt_description": "Radiologic examination, chest; single view",
+    "billed_icd10": "M54.5",
+    "billed_icd10_description": "Low back pain, unspecified",
+    "billed_amount": 345.00,
+    "denial_code": "CO-50",
+    "denial_reason": "These are non-covered services because this is not deemed a 'medical necessity' by the payer.",
+    "timely_filing_deadline_days": 180
+  },
+  "clinical_notes": "PATIENT ENCOUNTER NOTE\nPatient: Eleanor Vance | DOB: 04/12/1968 | DOS: 02/14/2026\nAttending Physician: Dr. Marcus Reed, MD (Internal Medicine, NPI: 1982736450)\nFacility: St. Jude Metropolitan Medical Pavilion\n\nCHIEF COMPLAINT:\nPatient presents with acute sub-sternal tightness radiating to left shoulder and intermittent shortness of breath for 36 hours. Secondary complaint of chronic mechanical lower back stiffness.\n\nHISTORY OF PRESENT ILLNESS:\nMs. Vance reports acute onset of pressure-like retrosternal chest pain (7/10 severity) starting yesterday evening, exacerbated by deep inspiration. Associated with mild dyspnea and diaphoresis. Denies recent trauma. Has history of chronic lumbar strain for which she takes occasional ibuprofen.\n\nPHYSICAL EXAMINATION:\n- Vitals: BP 142/88, HR 94 regular, RR 20, SpO2 96% on room air, Temp 98.6F.\n- Cardiovascular: Regular rate and rhythm, normal S1/S2, no murmurs, rubs, or gallops.\n- Respiratory: Decreased breath sounds at right lung base, mild inspiratory wheeze, no crackles.\n- Musculoskeletal: Paraspinal lumbar tenderness without radiculopathy.\n\nDIAGNOSTIC WORKUP ORDERED:\n1. 12-lead ECG (CPT 93000) - normal sinus rhythm.\n2. Chest Radiograph Single View (CPT 71045) - ordered STAT to rule out acute pneumothorax, pulmonary consolidation, or thoracic aortic pathology given acute chest discomfort.\n\nASSESSMENT & PLAN:\n1. Acute Chest Pain, unspecified (ICD-10: R07.9) - Primary etiology for urgent imaging. Stat chest radiograph ordered to evaluate pulmonary parenchymal infiltration or acute cardiothoracic etiology.\n2. Dyspnea, unspecified (ICD-10: R06.02) - Secondary respiratory symptom.\n3. Low back pain (ICD-10: M54.5) - Incidental chronic baseline complaint, stable, conservative management continued.\n\nSigned electronically by: Marcus Reed, MD (02/14/2026 11:42 EST)"
+}
