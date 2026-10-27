@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "frontend/build/web",
-  "buildCommand": "cd frontend && bash build.sh",
+  "outputDirectory": "build/web",
+  "buildCommand": "bash build.sh",
   "functions": {
     "api/index.py": {
       "memory": 1024,

@@ -51,3 +51,5 @@ ephemeral/
 # Vercel deployment artifacts
 .vercel/
 **/.vercel/
+.vercel
+.env*

@@ -1,0 +1,39 @@
+# Git
+.git/
+
+# Python virtual environment & caches
+.venv/
+**/.venv/
+venv/
+**/venv/
+ENV/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+**/.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+logs/
+**/logs/
+
+# Flutter build caches & artifacts (exclude intermediate files)
+.dart_tool/
+**/.dart_tool/
+frontend/.dart_tool/
+frontend/build/test_cache/
+frontend/build/unit_test_assets/
+frontend/build/*.cache.dill.track.dill
+frontend/build/*.dill
+frontend/build/app/
+frontend/build/ios/
+frontend/build/macos/
+frontend/build/windows/
+frontend/build/linux/
+
+# IDE & OS
+.DS_Store
+.idea/
+.vscode/
+*.iml
