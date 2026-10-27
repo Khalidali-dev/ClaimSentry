@@ -13,9 +13,8 @@ def test_health_check():
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
+        assert data["service"] == "ClaimSentry"
         assert "backend" in data
-        assert "meterless_url" in data
-        assert "zetaris_url" in data
 
         head_resp = client.head(path)
         assert head_resp.status_code == 200
@@ -28,7 +27,7 @@ def test_root_endpoint():
     data = response.json()
     assert data["service"] == "ClaimSentry"
     assert data["status"] == "ClaimSentry Backend is online"
-    assert data["docs"] == "/docs"
+    assert "/docs" in data["docs"]
 
     # Test HEAD /
     head_resp = client.head("/")
@@ -39,9 +38,10 @@ def test_root_endpoint():
     assert api_resp.status_code == 200
     assert api_resp.json()["status"] == "ClaimSentry Backend is online"
 
-    # Test /docs (Swagger UI)
-    docs_resp = client.get("/docs")
-    assert docs_resp.status_code == 200
+    # Test /docs and /api/docs (Swagger UI)
+    for docs_path in ["/docs", "/api/docs"]:
+        docs_resp = client.get(docs_path)
+        assert docs_resp.status_code == 200
 
 
 def test_run_endpoint_success():

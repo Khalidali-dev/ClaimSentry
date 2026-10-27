@@ -86,6 +86,27 @@ class RunResponse(BaseModel):
     trace_summary: List[Dict[str, Any]]
 
 
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.responses import JSONResponse
+
+@app.get("/api/docs", include_in_schema=False)
+@app.head("/api/docs", include_in_schema=False)
+def get_api_docs():
+    return get_swagger_ui_html(openapi_url="/api/openapi.json", title=f"{app.title} - Swagger UI")
+
+
+@app.get("/api/redoc", include_in_schema=False)
+@app.head("/api/redoc", include_in_schema=False)
+def get_api_redoc():
+    return get_redoc_html(openapi_url="/api/openapi.json", title=f"{app.title} - ReDoc")
+
+
+@app.get("/api/openapi.json", include_in_schema=False)
+@app.head("/api/openapi.json", include_in_schema=False)
+def get_api_openapi():
+    return JSONResponse(app.openapi())
+
+
 @app.get("/")
 @app.head("/")
 @app.get("/api")
@@ -94,12 +115,12 @@ def read_root():
     return {
         "status": "ClaimSentry Backend is online",
         "service": "ClaimSentry",
-        "docs": "/docs",
-        "health": "/health",
+        "docs": "/api/docs",
+        "health": "/api/health",
         "endpoints": {
-            "run": "POST /run",
-            "health": "GET /health",
-            "docs": "GET /docs",
+            "run": "POST /api/run",
+            "health": "GET /api/health",
+            "docs": "GET /api/docs",
         },
         "description": "Autonomous Healthcare Claim Denial Auditing & Appeal Engine",
         "track": "Track 03: Reasoning Architecture",
@@ -113,9 +134,9 @@ def read_root():
 def health_check():
     return {
         "status": "healthy",
+        "service": "ClaimSentry",
         "backend": "ClaimSentry Backend is online",
-        "meterless_url": os.getenv("METERLESS_BASE_URL", "http://127.0.0.1:8088/v1"),
-        "zetaris_url": os.getenv("ZETARIS_REST_URL", "http://localhost:8888/api/v1.0"),
+        "version": "1.0.0",
     }
 
 
