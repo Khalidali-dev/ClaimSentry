@@ -12,7 +12,8 @@ def test_health_check():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert "sample_mode" in data
+    assert "meterless_url" in data
+    assert "zetaris_url" in data
 
 
 def test_root_endpoint():
@@ -86,3 +87,74 @@ def test_run_endpoint_validation_error():
     }
     response = client.post("/run", json=invalid_payload)
     assert response.status_code == 400
+
+
+def test_run_endpoint_rejected_non_clinical_document():
+    # Non-medical document: cooking recipe
+    recipe_payload = {
+        "request_id": "REQ-RECIPE-001",
+        "denial_notice": {
+            "claim_id": "CLM-RECIPE-99",
+            "patient_name": "Eleanor Vance",
+            "billed_cpt": "71045",
+            "billed_icd10": "M54.5",
+            "denial_code": "CO-50",
+            "denial_reason": "Medical necessity not established",
+        },
+        "clinical_notes": (
+            "Classic Italian Lasagna Recipe: Preheat oven to 375 degrees F. In a large skillet, "
+            "cook ground beef with chopped onions and garlic until browned. Layer noodles, marinara "
+            "sauce, ricotta cheese, and mozzarella. Bake for 45 minutes until bubbling and golden brown."
+        ),
+    }
+
+    response = client.post("/run", json=recipe_payload)
+    assert response.status_code == 200
+    data = response.json()
+
+    # EvaluatorAgent MUST REJECT the audit
+    assert data["status"] == "REJECTED_NON_CLINICAL_DOCUMENT"
+    assert data["iterations_count"] == 1
+
+    audit = data["audit_scorecard"]
+    assert audit["status"] == "REJECTED_NON_CLINICAL_DOCUMENT"
+    assert audit["score"] == 0
+    assert audit["passed"] is False
+    assert (
+        audit["critique"]
+        == "The uploaded document contains non-clinical / non-medical content. Statutory appeal cannot be synthesized without valid physician documentation."
+    )
+    assert audit["critique_points"] == [
+        "The uploaded document contains non-clinical / non-medical content. Statutory appeal cannot be synthesized without valid physician documentation."
+    ]
+
+    # Must NOT proceed to generate an approved appeal package
+    assert data["appeal_package"]["appeal_letter"].startswith("REJECTED:")
+    assert len(data["appeal_package"]["statutory_citations"]) == 0
+
+
+def test_run_endpoint_rejected_scanned_pdf_without_text():
+    # PDF fallback text notice
+    scanned_pdf_payload = {
+        "request_id": "REQ-SCAN-001",
+        "denial_notice": {
+            "claim_id": "CLM-SCAN-01",
+            "billed_cpt": "99244",
+            "denial_code": "CO-16",
+        },
+        "clinical_notes": (
+            "[Notice: No selectable text stream found in scan.pdf. "
+            "If this is a scanned document, OCR is recommended. "
+            "Please verify or paste the clinical encounter text manually.]"
+        ),
+    }
+
+    response = client.post("/run", json=scanned_pdf_payload)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["status"] == "REJECTED_NON_CLINICAL_DOCUMENT"
+    assert data["audit_scorecard"]["score"] == 0
+    assert data["audit_scorecard"]["status"] == "REJECTED_NON_CLINICAL_DOCUMENT"
+    assert data["audit_scorecard"]["passed"] is False
+

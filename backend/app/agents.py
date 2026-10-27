@@ -7,6 +7,95 @@ from app.engines.h_mem import HMEMEngine
 from app.llm import MeterlessLLMClient
 from app.tracing import get_traces_for_id, trace_event
 
+REJECTION_STATUS_NON_CLINICAL = "REJECTED_NON_CLINICAL_DOCUMENT"
+REJECTION_CRITIQUE_NON_CLINICAL = (
+    "The uploaded document contains non-clinical / non-medical content. "
+    "Statutory appeal cannot be synthesized without valid physician documentation."
+)
+
+REQUIRED_MEDICAL_INDICATORS = [
+    "patient",
+    "diagnosis",
+    "symptoms",
+    "physician",
+    "doctor",
+    "history",
+    "examination",
+    "assessment",
+    "treatment",
+    "pain",
+    "acute",
+    "cpt",
+    "icd",
+    "prescribed",
+    "rx",
+    "vital",
+]
+
+NON_CLINICAL_KEYWORDS = [
+    "masterclass",
+    "webinar",
+    "course",
+    "curriculum",
+    "ai advisor",
+    "dilaton",
+]
+
+REQUIRED_INDICATOR_PATTERNS = {
+    "patient": re.compile(r"\b(patients?|pt)\b", re.IGNORECASE),
+    "diagnosis": re.compile(r"\b(diagnos(?:is|es|ed|tic)|dx)\b", re.IGNORECASE),
+    "symptoms": re.compile(r"\b(symptom(?:s|atic)?)\b", re.IGNORECASE),
+    "physician": re.compile(r"\b(physicians?)\b", re.IGNORECASE),
+    "doctor": re.compile(r"\b(doctors?|dr\.?)\b", re.IGNORECASE),
+    "history": re.compile(r"\b(history|hx)\b", re.IGNORECASE),
+    "examination": re.compile(r"\b(examin(?:ation|ed|e|es)?|exam|pe)\b", re.IGNORECASE),
+    "assessment": re.compile(r"\b(assessments?|impression)\b", re.IGNORECASE),
+    "treatment": re.compile(r"\b(treatments?|therap(?:y|ies))\b", re.IGNORECASE),
+    "pain": re.compile(r"\b(pains?)\b", re.IGNORECASE),
+    "acute": re.compile(r"\b(acute)\b", re.IGNORECASE),
+    "cpt": re.compile(r"\b(cpt(?:-4)?)\b", re.IGNORECASE),
+    "icd": re.compile(r"\b(icd(?:-?10|-?9)?|[A-TV-Z][0-9][0-9A-Z]?(?:\.[0-9A-Z]{1,4})?)\b", re.IGNORECASE),
+    "prescribed": re.compile(r"\b(prescrib(?:ed|ing|e|es)|prescription(?:s)?)\b", re.IGNORECASE),
+    "rx": re.compile(r"\b(rx|medication(?:s)?|meds?)\b", re.IGNORECASE),
+    "vital": re.compile(r"\b(vital(?:s|\s+signs?)?|bp|pulse|heart\s+rate|spo2)\b", re.IGNORECASE),
+}
+
+NON_CLINICAL_DISQUALIFIERS = [
+    re.compile(r"\[Notice:\s*No\s+selectable\s+text\s+stream\s+found", re.IGNORECASE),
+]
+
+
+def is_clinical_document(clinical_notes: Optional[str]) -> bool:
+    """Validates whether the provided notes contain valid clinical medical keywords
+
+    and genuine medical necessity evidence, strictly rejecting non-clinical content.
+    """
+    if not clinical_notes or not isinstance(clinical_notes, str):
+        return False
+
+    cleaned = clinical_notes.strip()
+    if len(cleaned) < 20:
+        return False
+
+    lower_text = cleaned.lower()
+
+    # 1. Immediately reject if any non-clinical keyword is found (e.g. masterclass, webinar, course, curriculum, ai advisor, dilaton)
+    for kw in NON_CLINICAL_KEYWORDS:
+        if kw in lower_text:
+            return False
+
+    for disqualifier in NON_CLINICAL_DISQUALIFIERS:
+        if disqualifier.search(cleaned):
+            return False
+
+    # 2. Check presence of required medical indicators (at least 2 required)
+    matched_indicators = set()
+    for indicator, pattern in REQUIRED_INDICATOR_PATTERNS.items():
+        if pattern.search(cleaned) or re.search(rf"\b{re.escape(indicator)}\b", lower_text):
+            matched_indicators.add(indicator)
+
+    return len(matched_indicators) >= 2
+
 
 class PlannerAgent:
     """PlannerAgent: Triage & Statutory Strategy Synthesis.
@@ -28,6 +117,52 @@ class PlannerAgent:
         cpt = str(denial.get("billed_cpt", "")).strip()
         denial_code = str(denial.get("denial_code", "")).strip()
         claim_id = str(denial.get("claim_id", "")).strip()
+
+        # Step 0: Clinical validation check
+        if not is_clinical_document(clinical_notes):
+            plan_data = {
+                "is_clinical_document": False,
+                "status": REJECTION_STATUS_NON_CLINICAL,
+                "triage_summary": f"Triage Rejected: Document uploaded for Claim {claim_id} lacks clinical encounter data.",
+                "root_cause_analysis": (
+                    f"Clinical validation failed. The provided notes do not contain clinical encounter "
+                    f"data, diagnostic proof, or medical necessity evidence for CPT {cpt}."
+                ),
+                "required_evidence_criteria": [
+                    "Valid clinical encounter note or EHR documentation",
+                    "Attending physician diagnosis and examination findings",
+                    "Documented medical necessity evidence",
+                ],
+                "recommended_icd10": None,
+                "statutory_citations": [],
+                "matched_guidelines_count": 0,
+                "target_icd10": None,
+                "critique": REJECTION_CRITIQUE_NON_CLINICAL,
+            }
+
+            h_mem.store_working_fact("is_clinical_document", False)
+            h_mem.store_working_fact("clinical_validation_status", REJECTION_STATUS_NON_CLINICAL)
+            h_mem.store_working_fact("clinical_validation_error", REJECTION_CRITIQUE_NON_CLINICAL)
+            h_mem.store_working_fact("remediation_plan", plan_data)
+
+            trace_event(
+                trace_id=trace_id,
+                agent_name="PlannerAgent",
+                action="REJECT_NON_CLINICAL_DOCUMENT",
+                target_agent="EvaluatorAgent",
+                model="meterless/clinical-validator",
+                status=REJECTION_STATUS_NON_CLINICAL,
+                details={
+                    "claim_id": claim_id,
+                    "denial_code": denial_code,
+                    "cpt": cpt,
+                    "reason": REJECTION_CRITIQUE_NON_CLINICAL,
+                },
+            )
+
+            return plan_data
+
+        h_mem.store_working_fact("is_clinical_document", True)
 
         # Step 1: Query Zetaris federated billing rules
         rules = self.zetaris.query_billing_rules(cpt_code=cpt, denial_code=denial_code, trace_id=trace_id)
@@ -179,6 +314,34 @@ class ExecutorAgent:
         member_id = denial.get("member_id", "MBR-001")
         dos = denial.get("date_of_service", "2026-01-01")
 
+        # Clinical validation check: Do not proceed to generate an approved appeal package when non-medical or irrelevant PDFs are uploaded
+        if not is_clinical_document(clinical_notes) or plan.get("status") == REJECTION_STATUS_NON_CLINICAL:
+            aborted_package = {
+                "summary": f"Appeal Generation Aborted for Claim {claim_id}: Non-Clinical Document",
+                "appeal_letter": f"REJECTED: {REJECTION_CRITIQUE_NON_CLINICAL}",
+                "statutory_citations": [],
+                "clinical_evidence": [],
+                "coding_crosswalk": {
+                    "cpt_code": cpt,
+                    "billed_icd10": billed_icd,
+                    "corrected_icd10": "",
+                },
+            }
+            trace_event(
+                trace_id=trace_id,
+                agent_name="ExecutorAgent",
+                action="ABORT_NON_CLINICAL_APPEAL",
+                target_agent="EvaluatorAgent",
+                model="meterless/auto",
+                status=REJECTION_STATUS_NON_CLINICAL,
+                details={
+                    "iteration": iteration,
+                    "claim_id": claim_id,
+                    "reason": REJECTION_CRITIQUE_NON_CLINICAL,
+                },
+            )
+            return aborted_package
+
         is_revision = iteration > 1 or bool(critique_directives)
 
         # Context for synthesis
@@ -304,6 +467,46 @@ class EvaluatorAgent:
         cpt = str(denial.get("billed_cpt", "")).strip()
         denial_code = str(denial.get("denial_code", "")).strip()
         target_icd = working_mem.get("dynamic_facts", {}).get("target_icd10", "")
+
+        # 0. Clinical Validation Check
+        # If clinical_notes lacks clinical medical keywords or appears to be non-medical text:
+        # EvaluatorAgent MUST REJECT the audit with:
+        # status: "REJECTED_NON_CLINICAL_DOCUMENT", score: 0,
+        # critique: "The attached document/note does not contain clinical encounter data or valid medical necessity evidence. Cannot generate statutory appeal."
+        if not is_clinical_document(clinical_notes):
+            critique_result = {
+                "passed": False,
+                "score": 0,
+                "status": REJECTION_STATUS_NON_CLINICAL,
+                "critique": REJECTION_CRITIQUE_NON_CLINICAL,
+                "summary": REJECTION_CRITIQUE_NON_CLINICAL,
+                "critique_points": [REJECTION_CRITIQUE_NON_CLINICAL],
+            }
+
+            trace_event(
+                trace_id=trace_id,
+                agent_name="EvaluatorAgent",
+                action="REJECT_NON_CLINICAL_DOCUMENT",
+                target_agent="Orchestrator",
+                model="meterless/clinical-auditor",
+                status=REJECTION_STATUS_NON_CLINICAL,
+                details={
+                    "iteration": iteration,
+                    "score": 0,
+                    "passed": False,
+                    "critique": REJECTION_CRITIQUE_NON_CLINICAL,
+                },
+            )
+
+            # Record this evaluation cycle in H-MEM Layer 3
+            h_mem.record_iteration(
+                iteration_num=iteration,
+                draft=draft_package,
+                critique=critique_result,
+                status=REJECTION_STATUS_NON_CLINICAL,
+            )
+
+            return critique_result
 
         appeal_text = draft_package.get("appeal_letter", "")
         coding_crosswalk = draft_package.get("coding_crosswalk", {})
@@ -482,6 +685,62 @@ class ClaimSentryOrchestrator:
         # 2. PlannerAgent Triage & Strategy
         plan = self.planner.plan(h_mem=h_mem, trace_id=trace_id)
 
+        # Short-circuit if non-clinical document was uploaded
+        if not is_clinical_document(clinical_notes) or plan.get("status") == REJECTION_STATUS_NON_CLINICAL:
+            active_draft = self.executor.execute(
+                h_mem=h_mem,
+                trace_id=trace_id,
+                iteration=1,
+            )
+
+            critique_result = self.evaluator.audit(
+                h_mem=h_mem,
+                draft_package=active_draft,
+                iteration=1,
+                trace_id=trace_id,
+            )
+
+            traces = get_traces_for_id(trace_id)
+
+            trace_event(
+                trace_id=trace_id,
+                agent_name="Orchestrator",
+                action="PIPELINE_REJECTED",
+                target_agent="APIClient",
+                status=REJECTION_STATUS_NON_CLINICAL,
+                details={
+                    "total_iterations": 1,
+                    "final_score": 0,
+                    "reason": critique_result.get("critique", ""),
+                },
+            )
+
+            return {
+                "request_id": request_id,
+                "status": REJECTION_STATUS_NON_CLINICAL,
+                "iterations_count": 1,
+                "remediation_plan": plan,
+                "audit_scorecard": {
+                    "score": 0,
+                    "passed": False,
+                    "status": REJECTION_STATUS_NON_CLINICAL,
+                    "critique": critique_result.get("critique", ""),
+                    "critique_points": critique_result.get("critique_points", []),
+                },
+                "critique_history": h_mem.get_critique_history(),
+                "appeal_package": active_draft,
+                "h_mem_summary": h_mem.summary(),
+                "trace_summary": [
+                    {
+                        "agent": t.get("agent_name"),
+                        "action": t.get("action"),
+                        "status": t.get("status"),
+                        "model": t.get("model"),
+                    }
+                    for t in traces
+                ],
+            }
+
         # 3. Iterative Executor <-> Evaluator Critique Loop
         iteration = 1
         active_draft = None
@@ -504,6 +763,9 @@ class ClaimSentryOrchestrator:
                 trace_id=trace_id,
             )
 
+            if critique_result.get("status") == REJECTION_STATUS_NON_CLINICAL:
+                break
+
             if critique_result.get("passed", False):
                 break
 
@@ -512,12 +774,19 @@ class ClaimSentryOrchestrator:
         # Retrieve full traces
         traces = get_traces_for_id(trace_id)
 
+        is_rejected = critique_result and critique_result.get("status") == REJECTION_STATUS_NON_CLINICAL
+        pipeline_status = (
+            REJECTION_STATUS_NON_CLINICAL
+            if is_rejected
+            else ("APPROVED" if critique_result and critique_result.get("passed") else "COMPLETED")
+        )
+
         trace_event(
             trace_id=trace_id,
             agent_name="Orchestrator",
-            action="PIPELINE_COMPLETE",
+            action="PIPELINE_COMPLETE" if not is_rejected else "PIPELINE_REJECTED",
             target_agent="APIClient",
-            status="APPROVED",
+            status=pipeline_status,
             details={
                 "total_iterations": iteration,
                 "final_score": critique_result.get("score") if critique_result else 96,
@@ -526,13 +795,14 @@ class ClaimSentryOrchestrator:
 
         return {
             "request_id": request_id,
-            "status": "APPROVED" if critique_result and critique_result.get("passed") else "COMPLETED",
+            "status": pipeline_status,
             "iterations_count": min(iteration, max_iterations),
             "remediation_plan": plan,
             "audit_scorecard": {
                 "score": critique_result.get("score", 96) if critique_result else 96,
                 "passed": critique_result.get("passed", True) if critique_result else True,
-                "status": critique_result.get("status", "APPROVED") if critique_result else "APPROVED",
+                "status": critique_result.get("status", pipeline_status) if critique_result else pipeline_status,
+                "critique": critique_result.get("critique", "") if critique_result else "",
                 "critique_points": critique_result.get("critique_points", []) if critique_result else [],
             },
             "critique_history": h_mem.get_critique_history(),

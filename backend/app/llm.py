@@ -26,14 +26,10 @@ class MeterlessLLMClient:
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
         default_model: Optional[str] = None,
-        sample_mode: Optional[bool] = None,
     ):
         self.base_url = base_url or os.getenv("METERLESS_BASE_URL", "http://127.0.0.1:8088/v1")
         self.api_key = api_key or os.getenv("METERLESS_RUNTIME_TOKEN", "in-tab")
         self.default_model = default_model or os.getenv("METERLESS_MODEL", "meterless/auto")
-
-        env_sample = os.getenv("SAMPLE_MODE", "false").lower() in ("true", "1", "yes")
-        self.sample_mode = env_sample if sample_mode is None else sample_mode
 
         self.client = OpenAI(
             base_url=self.base_url,
@@ -60,42 +56,41 @@ class MeterlessLLMClient:
         model_name = model or self.default_model
         tid = trace_id or "trace-gen"
 
-        # Attempt live API call if not strictly sample mode
-        if not self.sample_mode:
-            try:
-                response = self.client.chat.completions.create(
-                    model=model_name,
-                    messages=messages,
-                    temperature=temperature,
-                    timeout=5.0,
-                )
-                content = response.choices[0].message.content or ""
-                used_model = getattr(response, "model", model_name)
+        # Attempt live API call
+        try:
+            response = self.client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                temperature=temperature,
+                timeout=5.0,
+            )
+            content = response.choices[0].message.content or ""
+            used_model = getattr(response, "model", model_name)
 
-                trace_event(
-                    trace_id=tid,
-                    agent_name=agent_name,
-                    action="METERLESS_INFERENCE_SUCCESS",
-                    target_agent="MeterlessNightshift",
-                    model=used_model,
-                    status="SUCCESS",
-                    details={
-                        "base_url": self.base_url,
-                        "tokens_used": getattr(response.usage, "total_tokens", 0) if hasattr(response, "usage") else None,
-                    },
-                )
-                return {"content": content, "model": used_model}
+            trace_event(
+                trace_id=tid,
+                agent_name=agent_name,
+                action="METERLESS_INFERENCE_SUCCESS",
+                target_agent="MeterlessNightshift",
+                model=used_model,
+                status="SUCCESS",
+                details={
+                    "base_url": self.base_url,
+                    "tokens_used": getattr(response.usage, "total_tokens", 0) if hasattr(response, "usage") else None,
+                },
+            )
+            return {"content": content, "model": used_model}
 
-            except Exception as e:
-                trace_event(
-                    trace_id=tid,
-                    agent_name=agent_name,
-                    action="METERLESS_CALL_FALLBACK",
-                    target_agent="MeterlessNightshift",
-                    model=f"{model_name}-fallback",
-                    status="FALLBACK_TRIGGERED",
-                    details={"error": str(e), "msg": "Meterless endpoint unreachable or timed out; falling back to resilient local reasoning."},
-                )
+        except Exception as e:
+            trace_event(
+                trace_id=tid,
+                agent_name=agent_name,
+                action="METERLESS_CALL_FALLBACK",
+                target_agent="MeterlessNightshift",
+                model=f"{model_name}-fallback",
+                status="FALLBACK_TRIGGERED",
+                details={"error": str(e), "msg": "Meterless endpoint unreachable or timed out; falling back to resilient local reasoning."},
+            )
 
         # Resilient local reasoning synthesis
         content, used_model = self._generate_sample_reasoning(messages, agent_name, system_context)

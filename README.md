@@ -1,284 +1,217 @@
 # ClaimSentry 🛡️
-### Autonomous Agentic Reasoning for US Healthcare Claim Denial Auditing & Appeal Generation
+### Autonomous Multi-Agent Reasoning Architecture for US Healthcare Claim Denial Auditing & Statutory Appeal Synthesis
 **Open Agent Hackathon 2026 — Track 03: Reasoning Architecture**
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.14-green.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-teal.svg)](https://fastapi.tiangolo.com/)
-[![Track](https://img.shields.io/badge/Track-03%20Reasoning%20Architecture-orange.svg)](#)
+ClaimSentry is an autonomous multi-agent healthcare insurance denial auditor and statutory appeal synthesizer. It replaces manual, error-prone denial management with a closed-loop **Planner ↔ Executor ↔ Evaluator** reasoning architecture integrated with **Zetaris** federated policy retrieval, **Meterless H-MEM** hierarchical memory, and **Meterless Nightshift** non-metered background reasoning.
 
 ---
 
-## 1. Executive Summary & Problem Context
+## 📁 Repository Structure
 
-In the United States healthcare ecosystem, over **$260 billion in insurance claims are denied annually**. According to the American Medical Association (AMA) and Healthcare Financial Management Association (HFMA):
-- Over **15% of all healthcare provider claims** are denied upon initial adjudication.
-- **65% of denied claims are never appealed** due to provider administrative exhaustion, manual medical record review bottlenecks, and the complexity of citing federal statutory precedents.
-- Denials frequently cite cryptic Claim Adjustment Reason Codes (CARC) such as:
-  - **CO-50**: "These are non-covered services because this is not deemed a 'medical necessity' by the payer."
-  - **CO-16**: "Claim/service lacks information or has submission/billing error(s) needed for adjudication."
-  - **CO-18**: "Exact duplicate claim/service or bundled line item."
-
-Commercial insurers often issue automated algorithmic denials relying on superficial intake diagnosis codes (e.g., patient intake registration lists "back stiffness"), ignoring treating physician progress notes (EHR) that document acute clinical necessity (e.g., STAT chest X-ray ordered for acute retrosternal chest pain `R07.9`).
-
-**ClaimSentry** solves this crisis by deploying an autonomous **multi-agent reasoning architecture** that parses denial codes and EHR clinical notes, federates billing policies and coverage guidelines via **Zetaris**, maintains working facts and critique cycles in **Meterless H-MEM**, routes reasoning through **Meterless Nightshift**, and enforces a rigorous **Planner ↔ Executor ↔ Evaluator critique feedback loop** to generate statutory, audit-proof appeal packets.
-
----
-
-## 2. Multi-Agent Reasoning Architecture (Track 03)
-
-ClaimSentry does not rely on single-prompt generation. Instead, it enforces a structured multi-agent loop with active critique, audit verification, and reflective memory:
-
-```
-                      +---------------------------------------+
-                      |       Input Denial Notice & EHR       |
-                      +---------------------------------------+
-                                          |
-                                          v
-                      +---------------------------------------+
-                      |        Meterless H-MEM Engine         |
-                      |  - L1: Working Memory (Case Facts)    |
-                      |  - L2: Policy Precedents (Rules/LCD)  |
-                      |  - L3: Critique History (Meta-Reason) |
-                      +---------------------------------------+
-                                     ^         ^
-                        Reads Context|         |Stores Plan / Precedents
-                                     |         |
-                               +--------------------+
-                               |    PlannerAgent    | <--- Queries Zetaris
-                               +--------------------+      Federated Lakehouse
-                                         |
-                                         | Generates Remediation Plan
-                                         v
-                         +------------------------------+
-                         |        ExecutorAgent         | <----+
-                         |   (Drafts Initial Appeal)    |      |
-                         +------------------------------+      |
-                                         |                     | Revision
-                            Appeal Draft |                     | Directives
-                                         v                     |
-                         +------------------------------+      |
-                         |        EvaluatorAgent        | -----+
-                         | (Clinical & Statutory Audit) |  [If Critique Flagged]
-                         +------------------------------+
-                                         |
-                                         | [Audit Score >= 90 & Passed]
-                                         v
-                      +---------------------------------------+
-                      | Audit-Proof Statutory Appeal Package  |
-                      +---------------------------------------+
-```
-
-### The Three Reasoning Agents
-1. **`PlannerAgent` (Triage & Statutory Strategy Synthesis)**:
-   - Analyzes denial reason codes (CARC/RARC), dates of service, and raw clinical EHR text.
-   - Dynamically parses clinical findings, physician credentials, and diagnostic indications.
-   - Interrogates **Zetaris** for enterprise coverage guidelines (e.g. CMS LCD L33598, NCCI policy manual, CPT Assistant).
-   - Synthesizes a structured **Remediation Plan** outlining mandatory clinical citations, diagnostic crosswalks, and applicable federal statutes.
-
-2. **`ExecutorAgent` (Drafting & Iterative Revision)**:
-   - Consumes the Planner's plan, H-MEM memory layers, and clinical EHR facts.
-   - In **Iteration 1**, constructs an initial formal appeal package.
-   - When receiving **Evaluator critiques**, executes targeted revisions incorporating direct verbatim physician quotes, qualifying ICD-10 crosswalks, and statutory review mandates.
-
-3. **`EvaluatorAgent` (Clinical & Statutory Compliance Auditor)**:
-   - Performs a multi-point audit on the draft:
-     - **Clinical Evidence Specificity**: Are verbatim physician progress notes, symptoms, and timestamps cited?
-     - **ICD-10 / CPT Crosswalk Validation**: Does the appeal cite approved qualifying ICD-10 codes matching the CPT procedure?
-     - **Statutory & Regulatory Rigor**: Are federal statutes (ERISA 29 CFR § 2560.503-1, ACA § 2719, Social Security Act § 1862) explicitly invoked?
-     - **Remedy & Timeline Notice**: Is there an immediate overturn demand and statutory 30-day compliance deadline?
-   - **Enforces the Critique Loop**: On initial drafts, it flags deficiencies, prevents premature sign-off, and transmits structured critique directives back to `ExecutorAgent`. Upon satisfactory revision, it issues an `APPROVED` audit scorecard with a verified score (95+).
-
----
-
-## 3. Technology Stack & Key Components
-
-### 3.1 Meterless Nightshift (`app/llm.py`)
-- Interfaces through an OpenAI-compatible runtime routing via `METERLESS_BASE_URL` with `METERLESS_RUNTIME_TOKEN`.
-- Injects standard enterprise telemetry headers:
-  - `meterless-app: ClaimSentry`
-  - `meterless-scope: user`
-- Supports dynamic model routing (`meterless/auto`, `meterless/fast`, `meterless/deep`).
-- **Resilient Fallback**: Automatically activates dynamic local reasoning synthesis when `SAMPLE_MODE=true` or when the network daemon is offline, ensuring reliable demonstration in zero-network environments.
-
-### 3.2 Meterless H-MEM Engine (`app/engines/h_mem.py`)
-- **Layer 1: Working Memory**: Tracks parsed denial notices, patient identifiers, extracted CPT/ICD codes, and raw EHR progress notes.
-- **Layer 2: Semantic Policy Precedents**: Caches CMS Local Coverage Determinations (LCD), National Correct Coding Initiative (NCCI) policy rules, and statutory citations.
-- **Layer 3: Reflective Critique & Meta-Memory**: Records every draft iteration, evaluator scorecard, and critique directive to track convergence across the reasoning loop.
-
-### 3.3 Zetaris REST Client Adapter (`app/adapters/zetaris.py`)
-- Connects to the **Zetaris Federated Data Virtualization REST API**:
-  - Endpoint: `POST {ZETARIS_REST_URL}/sql-editor/sqls/run`
-  - Headers: `Authorization: Bearer {ZETARIS_API_KEY}`, `X-Org-ID: {ZETARIS_ORG_ID}`, `X-Request-ID: {UUID}`
-- Executes federated SQL queries across healthcare lakehouse schemas to retrieve clinical coverage policies.
-- **Structured Mock Fallback**: When `SAMPLE_MODE=true` or if API connectivity fails, parses `data/mock_billing_rules.csv` dynamically, mapping CPT codes (71045, 99244, 99214, etc.) to valid ICD-10 crosswalks.
-
-### 3.4 JSONL Observability & Tracing (`app/tracing.py`)
-- Records structured execution traces to `logs/claim_traces.jsonl` and stdout.
-- Captures: `timestamp`, `trace_id`, `agent_name`, `action`, `target_agent`, `model`, `status`, and `details`.
-
----
-
-## 4. Directory Structure
+The monorepo is cleanly separated into backend service and frontend dashboard directories:
 
 ```
 ClaimSentry/
-├── app/
-│   ├── __init__.py
-│   ├── agents.py           # PlannerAgent, ExecutorAgent, EvaluatorAgent & Orchestrator
-│   ├── llm.py              # Meterless Nightshift client with resilient sample reasoning
-│   ├── tracing.py          # Structured JSONL audit trace logger
-│   ├── engines/
-│   │   ├── __init__.py
-│   │   └── h_mem.py        # Meterless H-MEM 3-tier hierarchical memory engine
-│   └── adapters/
-│       ├── __init__.py
-│       └── zetaris.py      # Zetaris REST client with local lakehouse fallback
-├── data/
-│   └── mock_billing_rules.csv # Billing guidelines (CPT, ICD-10, LCDs, precedents)
-├── input_examples/
-│   ├── example_1.json      # CO-50 Medical Necessity (Chest X-ray vs Back pain intake)
-│   ├── example_2.json      # CO-16 Missing documentation (Specialty Consult CPT 99244)
-│   └── example_3.json      # CO-18 Duplicate claim error (Modifier -25 / -59 evidence)
-├── output_examples/
-│   ├── example_1.json      # Verified audit-proof statutory appeal for Example 1
-│   ├── example_2.json      # Verified audit-proof statutory appeal for Example 2
-│   └── example_3.json      # Verified audit-proof statutory appeal for Example 3
-├── logs/                   # Directory containing claim_traces.jsonl execution traces
-├── tests/
-│   ├── __init__.py
-│   ├── test_engine.py      # Unit tests verifying H-MEM storage & retrieval
-│   └── test_run.py         # Integration tests verifying FastAPI POST /run & audit loop
-├── run.py                  # FastAPI application exposing POST /run on port 8000
-├── requirements.txt        # Python dependencies
-├── Dockerfile              # Production Python 3.11-slim container
-├── .env.example            # Environment variable template
-├── .env                    # Active local environment settings
-└── README.md               # System documentation
+├── backend/                  # Python FastAPI Backend & Multi-Agent Reasoning Engine
+│   ├── app/                  # Multi-agent core (Agents, Tools, Memory, Orchestrator)
+│   ├── data/                 # Local CMS policies, CARC mappings, appeal templates
+│   ├── input_examples/       # Sample claim denial notices and clinical notes
+│   ├── output_examples/      # Audited appeal packets and scorecard examples
+│   ├── tests/                # Automated pytest suite (14 unit & integration tests)
+│   ├── run.py                # FastAPI HTTP service with universal CORS (/run, /health)
+│   ├── requirements.txt      # Python dependencies (fastapi, uvicorn, pydantic, openai, etc.)
+│   ├── Dockerfile            # Hugging Face Spaces (Docker SDK) production container (port 7860)
+│   ├── .env.example          # Environment variable template
+│   └── README.md             # In-depth Track 03 Reasoning Architecture & Space metadata
+│
+├── frontend/                 # Flutter Web Production Dashboard
+│   ├── lib/                  # Application source code (UI, Models, Services, Config)
+│   │   └── config/           # AppConfig (auto-configured for Hugging Face Spaces backend)
+│   ├── web/                  # Web entry point, manifest, index.html
+│   ├── test/                 # Automated Flutter widget test suite
+│   ├── build.sh              # Zero-config automated Flutter Web build script for CI/Vercel
+│   ├── vercel.json           # Vercel SPA routing rewrite rules and caching headers
+│   ├── pubspec.yaml          # Flutter package dependencies
+│   └── analysis_options.yaml # Dart analysis configuration
+│
+├── vercel.json               # Monorepo root Vercel configuration fallback
+├── .gitignore                # Unified Git ignore for Python & Flutter
+└── README.md                 # Deployment and architecture guide (this file)
 ```
 
 ---
 
-## 5. Quick Start & Installation
+## ☁️ Production Deployment Guide
 
-### Option A: Local Virtual Environment Setup
+ClaimSentry is configured for cloud deployment:
+* **Frontend (Live Production)**: [https://claimsentry.vercel.app](https://claimsentry.vercel.app)
+* **Backend (Hugging Face Space)**: [https://khalidali-dev-claimsentry-backend.hf.space](https://khalidali-dev-claimsentry-backend.hf.space)
 
-1. **Clone and navigate to repository**:
-   ```bash
-   cd "ClaimSentry"
-   ```
-
-2. **Create Python virtual environment**:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configure environment**:
-   ```bash
-   cp .env.example .env
-   ```
-   *(By default, `SAMPLE_MODE=true` is enabled so the system runs immediately out of the box without external API keys).*
-
-5. **Run the test suite**:
-   ```bash
-   pytest -v
-   ```
-
-6. **Start the ClaimSentry API server**:
-   ```bash
-   python run.py
-   ```
-   The API will start on `http://0.0.0.0:8000`. Interactive documentation is available at `http://localhost:8000/docs`.
+```
+┌────────────────────────────────────────────────────────┐          ┌─────────────────────────────────────────┐
+│                    Vercel Frontend                     │  HTTPS   │        Hugging Face Space Backend       │
+│              https://claimsentry.vercel.app            │ ───────> │  https://<user>-claimsentry.hf.space    │
+│              Flutter Web (SPA Rewrites)                │          │        FastAPI + Uvicorn (Port 7860)    │
+└────────────────────────────────────────────────────────┘          └─────────────────────────────────────────┘
+```
 
 ---
 
-### Option B: Docker Container
+### Part 1: Deploying the Backend to Hugging Face Spaces
 
-1. **Build the Docker image**:
+The backend is packaged with a dedicated [`backend/Dockerfile`](file:///backend/Dockerfile) following Hugging Face Spaces Docker SDK guidelines (non-root user UID 1000 and HTTP port `7860`).
+
+#### Step-by-Step Setup:
+1. **Create a Space on Hugging Face**:
+   * Navigate to [Hugging Face Spaces](https://huggingface.co/new-space).
+   * **Space Name**: e.g. `claimsentry-backend`.
+   * **License**: Apache 2.0.
+   * **Space SDK**: Select **Docker** (`Blank` template).
+   * Set Space Hardware to **CPU basic** (Free tier) or upgrade as needed.
+   * Set Space to **Public**.
+
+2. **Deploy via Git / CLI**:
+   Clone your new Space repository and copy the `backend/` contents into it:
    ```bash
-   docker build -t claimsentry:latest .
+   # Clone your empty Hugging Face Space
+   git clone https://huggingface.co/spaces/<YOUR_HF_USERNAME>/claimsentry-backend hf-space
+   cd hf-space
+
+   # Copy backend files from ClaimSentry
+   cp -r /path/to/ClaimSentry/backend/* .
+   cp /path/to/ClaimSentry/backend/.env.example .env
+
+   # Commit and push to Hugging Face
+   git add .
+   git commit -m "Deploy ClaimSentry Multi-Agent Backend to Hugging Face Space"
+   git push
    ```
 
-2. **Run the container**:
-   ```bash
-   docker run -p 8000:8000 --env-file .env claimsentry:latest
-   ```
+3. **Configure Space Secrets / Variables** (Optional):
+   In your Space **Settings** → **Variables and secrets**, configure if needed:
+   * `CORS_ORIGINS`: `*` (or your frontend Vercel domain `https://frontend-liard-rho-psi7h6f8u2.vercel.app`)
+   * `METERLESS_BASE_URL`: Meterless inference gateway URL (default: `http://127.0.0.1:8088/v1`)
+   * `METERLESS_MODEL`: Model identifier (default: `meterless/auto`)
+   * `ZETARIS_REST_URL`: Zetaris federated lakehouse endpoint (default: `http://localhost:8888/api/v1.0`)
+
+4. **Verify Deployment**:
+   * Once built, Hugging Face will mark the Space **Running**.
+   * Direct API endpoint: `https://<YOUR_HF_USERNAME>-claimsentry-backend.hf.space`
+   * Health Check: `https://<YOUR_HF_USERNAME>-claimsentry-backend.hf.space/health`
+   * Interactive Swagger Documentation: `https://<YOUR_HF_USERNAME>-claimsentry-backend.hf.space/docs`
 
 ---
 
-## 6. API Verification & cURL Examples
+### Part 2: Deploying the Frontend to Vercel
 
-### 6.1 Health Check
+The frontend includes [`frontend/vercel.json`](file:///frontend/vercel.json) with SPA URL rewrites and [`frontend/build.sh`](file:///frontend/build.sh) for automated builds.
+
+#### Option A: Vercel Dashboard (From Git)
+1. In the [Vercel Dashboard](https://vercel.com/new), import your GitHub repository.
+2. Under **Project Settings**:
+   * **Framework Preset**: Select `Other`.
+   * **Root Directory**: Click *Edit* and select **`frontend`**.
+   * **Build Command**: `bash build.sh`
+   * **Output Directory**: `build/web`
+3. Under **Environment Variables**, configure your backend URL:
+   * **`BACKEND_URL`**: `https://<YOUR_HF_USERNAME>-claimsentry-backend.hf.space`
+4. Click **Deploy**. Vercel will install Flutter, build the optimized Web release, and deploy the application.
+
+#### Option B: Deploying via Vercel CLI (Local Pre-Build)
+If you prefer building locally and deploying directly via the Vercel CLI:
+
 ```bash
-curl -X GET http://localhost:8000/health
+# 1. Build the Flutter Web bundle pointing to your Hugging Face Space backend
+cd frontend
+flutter build web --release --dart-define=BACKEND_URL=https://<YOUR_HF_USERNAME>-claimsentry-backend.hf.space
+
+# 2. Deploy the build output to Vercel production
+vercel --prod
 ```
 
-### 6.2 Execute Appeal Generation (Example 1: CO-50 Medical Necessity)
+#### SPA Routing Verification
+When users navigate directly to sub-routes (e.g., `/dashboard`) or refresh the browser, [`frontend/vercel.json`](file:///frontend/vercel.json) ensures all requests rewrite to `/index.html`, eliminating 404 errors.
+
+---
+
+## 💻 Local Development Guide
+
+### 1. Running the Backend Locally
+
 ```bash
-curl -X POST http://localhost:8000/run \
-  -H "Content-Type: application/json" \
-  -d @input_examples/example_1.json
+cd backend
+
+# Create and activate Python 3.11 virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the development server (runs on port 7860)
+python run.py
 ```
 
-### 6.3 Execute Appeal Generation (Example 2: CO-16 Missing Documentation)
+* **Service URL**: `http://localhost:7860`
+* **Health Check**: `http://localhost:7860/health`
+* **Swagger API Docs**: `http://localhost:7860/docs`
+* **Pipeline Audit Endpoint**: `POST http://localhost:7860/run`
+
+#### Running Backend Automated Tests
 ```bash
-curl -X POST http://localhost:8000/run \
-  -H "Content-Type: application/json" \
-  -d @input_examples/example_2.json
+cd backend
+source .venv/bin/activate
+pytest
 ```
+*14 comprehensive unit and integration tests covering agent reasoning loops, epistemic evaluation, clinical validation, and API routes.*
 
-### 6.4 Execute Appeal Generation (Example 3: CO-18 Duplicate Claim / Modifier)
+---
+
+### 2. Running the Frontend Locally
+
 ```bash
-curl -X POST http://localhost:8000/run \
-  -H "Content-Type: application/json" \
-  -d @input_examples/example_3.json
+cd frontend
+
+# Install Flutter dependencies
+flutter pub get
+
+# Run on Chrome
+flutter run -d chrome
+```
+
+* **Environment Auto-Detection**: Uses `AppConfig` to target the live Hugging Face Space backend.
+* **Custom Backend Flag**: To point local development to a custom backend:
+  ```bash
+  flutter run -d chrome --dart-define=BACKEND_URL=https://<YOUR_HF_USERNAME>-claimsentry-backend.hf.space
+  ```
+
+#### Running Frontend Automated Tests
+```bash
+cd frontend
+flutter analyze
+flutter test
 ```
 
 ---
 
-## 7. Audit & Critique Trace Example
+## 🐳 Docker Deployment (Local Container)
 
-When `POST /run` is invoked, ClaimSentry streams real-time agent execution traces to both stdout and `logs/claim_traces.jsonl`:
+To test the containerized Hugging Face Space backend locally on port 7860:
 
-```
-[TRACE] [Orchestrator]  -> [HMEMEngine]          | INITIALIZE_PIPELINE              | INITIALIZED | model=meterless/nightshift
-[TRACE] [ZetarisAdapter] -> [HMEMEngine]          | MOCK_LAKEHOUSE_QUERY             | SUCCESS     | model=meterless/nightshift
-[TRACE] [PlannerAgent]  -> [ExecutorAgent]       | SYNTHESIZE_REMEDIATION_PLAN      | SUCCESS     | model=meterless/auto-local-sample
-[TRACE] [ExecutorAgent] -> [EvaluatorAgent]      | GENERATE_INITIAL_APPEAL_DRAFT    | SUCCESS     | model=meterless/auto-local-sample
-[TRACE] [EvaluatorAgent]-> [ExecutorAgent]       | CRITIQUE_FLAG_REVISION_REQUESTED | CRITIQUE    | model=meterless/deep-local-sample
-[TRACE] [ExecutorAgent] -> [EvaluatorAgent]      | REVISE_APPEAL_PACKAGE            | SUCCESS     | model=meterless/auto-local-sample
-[TRACE] [EvaluatorAgent]-> [Orchestrator]        | APPROVE_APPEAL_PACKAGE           | APPROVED    | model=meterless/deep-local-sample
-[TRACE] [Orchestrator]  -> [APIClient]           | PIPELINE_COMPLETE                | APPROVED    | model=meterless/nightshift
+```bash
+cd backend
+docker build -t claimsentry-backend .
+docker run -p 7860:7860 --env-file .env.example claimsentry-backend
 ```
 
----
-
-## 8. Statutory & Regulatory Authorities Cited
-
-Every appeal generated by ClaimSentry cites applicable federal laws and administrative guidelines:
-- **ERISA 29 U.S.C. § 1133 & 29 C.F.R. § 2560.503-1(h)(2)**: Enforces the claimant's right to a "full and fair review" taking into account all medical evidence submitted, irrespective of prior adjudication determinations.
-- **Affordable Care Act (ACA) § 2719 / 45 C.F.R. § 147.136**: Mandates internal claim appeal rights and external independent review processes.
-- **Social Security Act § 1862(a)(1)(A)**: Codifies standard medical necessity coverage criteria.
-- **CMS Local Coverage Determinations (LCDs)**: Specific diagnostic crosswalk evidence (e.g. LCD L33598 for thoracic radiology).
-- **NCCI Policy Manual Chapter 1, Section E**: Coding guidelines for Modifier -25 (distinct procedural service) and Modifier -59.
+Test container healthcheck:
+```bash
+curl http://localhost:7860/health
+```
 
 ---
 
-## 9. Current Limitations & Production Roadmap
+## 🔬 Multi-Agent Reasoning Architecture
 
-- **EHR Direct Integration**: Current submission accepts structured JSON denial notices and raw progress notes; production deployment will connect via FHIR API (Fast Healthcare Interoperability Resources) to Epic Systems and Cerner.
-- **Payer Portal Automation**: Direct clearinghouse submission via EDI 278 (Prior Authorization) and EDI 837/277 (Claims & Status).
-- **OCR Ingestion**: Ingestion of scanned Explanation of Benefits (EOB) mailers via multimodal vision models.
-
----
-
-## 10. Submission Metadata
-- **Hackathon**: Open Agent Hackathon 2026
-- **Track**: Track 03: Reasoning Architecture
-- **Team Submission**: ClaimSentry
+For detailed information on the multi-agent reasoning architecture, Zetaris federated queries, Meterless H-MEM hierarchical memory, and mathematical critique convergence:
+👉 Please refer to [backend/README.md](file:///backend/README.md).

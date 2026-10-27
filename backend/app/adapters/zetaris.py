@@ -29,14 +29,10 @@ class ZetarisClient:
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
         org_id: Optional[str] = None,
-        sample_mode: Optional[bool] = None,
     ):
         self.base_url = (base_url or os.getenv("ZETARIS_REST_URL", "http://localhost:8888/api/v1.0")).rstrip("/")
         self.api_key = api_key or os.getenv("ZETARIS_API_KEY", "local_token")
         self.org_id = org_id or os.getenv("ZETARIS_ORG_ID", "1")
-
-        env_sample = os.getenv("SAMPLE_MODE", "false").lower() in ("true", "1", "yes")
-        self.sample_mode = env_sample if sample_mode is None else sample_mode
 
     def query_billing_rules(
         self,
@@ -65,48 +61,47 @@ class ZetarisClient:
         request_uuid = str(uuid.uuid4())
         tid = trace_id or request_uuid
 
-        if not self.sample_mode:
-            endpoint = f"{self.base_url}/sql-editor/sqls/run"
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "X-Org-ID": str(self.org_id),
-                "X-Request-ID": request_uuid,
-                "Content-Type": "application/json",
-            }
-            payload = {"sql": sql_query}
+        endpoint = f"{self.base_url}/sql-editor/sqls/run"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "X-Org-ID": str(self.org_id),
+            "X-Request-ID": request_uuid,
+            "Content-Type": "application/json",
+        }
+        payload = {"sql": sql_query}
 
-            try:
-                response = requests.post(endpoint, json=payload, headers=headers, timeout=2.5)
-                if response.status_code == 200:
-                    data = response.json()
-                    rows = data.get("rows") or data.get("data") or []
-                    trace_event(
-                        trace_id=tid,
-                        agent_name="ZetarisAdapter",
-                        action="EXECUTE_FEDERATED_SQL",
-                        target_agent="ZetarisEngine",
-                        status="SUCCESS",
-                        details={"endpoint": endpoint, "rows_returned": len(rows), "request_uuid": request_uuid},
-                    )
-                    return rows
-                else:
-                    trace_event(
-                        trace_id=tid,
-                        agent_name="ZetarisAdapter",
-                        action="ZETARIS_API_HTTP_ERROR",
-                        target_agent="ZetarisEngine",
-                        status="FALLBACK_TRIGGERED",
-                        details={"status_code": response.status_code, "msg": response.text[:200]},
-                    )
-            except Exception as e:
+        try:
+            response = requests.post(endpoint, json=payload, headers=headers, timeout=2.5)
+            if response.status_code == 200:
+                data = response.json()
+                rows = data.get("rows") or data.get("data") or []
                 trace_event(
                     trace_id=tid,
                     agent_name="ZetarisAdapter",
-                    action="ZETARIS_CONNECTION_FAILURE",
+                    action="EXECUTE_FEDERATED_SQL",
+                    target_agent="ZetarisEngine",
+                    status="SUCCESS",
+                    details={"endpoint": endpoint, "rows_returned": len(rows), "request_uuid": request_uuid},
+                )
+                return rows
+            else:
+                trace_event(
+                    trace_id=tid,
+                    agent_name="ZetarisAdapter",
+                    action="ZETARIS_API_HTTP_ERROR",
                     target_agent="ZetarisEngine",
                     status="FALLBACK_TRIGGERED",
-                    details={"error": str(e), "endpoint": endpoint, "msg": "Docker container unreachable; falling back to local lakehouse dataset."},
+                    details={"status_code": response.status_code, "msg": response.text[:200]},
                 )
+        except Exception as e:
+            trace_event(
+                trace_id=tid,
+                agent_name="ZetarisAdapter",
+                action="ZETARIS_CONNECTION_FAILURE",
+                target_agent="ZetarisEngine",
+                status="FALLBACK_TRIGGERED",
+                details={"error": str(e), "endpoint": endpoint, "msg": "Docker container unreachable; falling back to local lakehouse dataset."},
+            )
 
         # Fallback execution using structured mock billing dataset
         results = self._query_csv_dataset(fallback_cpt, fallback_denial)

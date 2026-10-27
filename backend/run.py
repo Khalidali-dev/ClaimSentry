@@ -17,9 +17,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Configure CORS for local development and production Vercel frontend deployments
+cors_origins_raw = os.getenv("CORS_ORIGINS", "*")
+allowed_origins = [o.strip() for o in cors_origins_raw.split(",") if o.strip()]
+if not allowed_origins:
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins if allowed_origins != ["*"] else ["*"],
+    allow_origin_regex=r"^https?://.*" if allowed_origins == ["*"] else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,10 +88,8 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    sample_mode = os.getenv("SAMPLE_MODE", "false").lower() in ("true", "1", "yes")
     return {
         "status": "healthy",
-        "sample_mode": sample_mode,
         "meterless_url": os.getenv("METERLESS_BASE_URL", "http://127.0.0.1:8088/v1"),
         "zetaris_url": os.getenv("ZETARIS_REST_URL", "http://localhost:8888/api/v1.0"),
     }
@@ -97,10 +102,14 @@ def run_appeal_pipeline(payload: RunRequest):
 
     denial_data = payload.denial_notice
     if isinstance(denial_data, dict):
+        if "billed_cpt" not in denial_data and "denied_cpt" in denial_data:
+            denial_data["billed_cpt"] = denial_data["denied_cpt"]
+        if "billed_amount" not in denial_data and "denied_amount" in denial_data:
+            denial_data["billed_amount"] = denial_data["denied_amount"]
         if "billed_cpt" not in denial_data or "denial_code" not in denial_data:
             raise HTTPException(
                 status_code=400,
-                detail="denial_notice must include at least 'billed_cpt' and 'denial_code'",
+                detail="denial_notice must include at least 'billed_cpt' (or 'denied_cpt') and 'denial_code'",
             )
     else:
         raise HTTPException(status_code=400, detail="denial_notice must be a valid object")
@@ -124,7 +133,7 @@ def run_appeal_pipeline(payload: RunRequest):
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8000"))
+    port = int(os.getenv("PORT", "7860"))
     host = os.getenv("HOST", "0.0.0.0")
     print(f"Starting ClaimSentry server on {host}:{port}...")
     uvicorn.run("run:app", host=host, port=port, reload=False)

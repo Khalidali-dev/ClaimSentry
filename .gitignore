@@ -1,28 +1,53 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 
 # Environment variables and secrets
 .env
+**/.env
 .env*.local
+**/.env*.local
 !.env.example
+!**/.env.example
 
-# Virtual environments
+# Python virtual environments
 .venv/
+**/.venv/
 venv/
 ENV/
 
-
-# Testing
+# Testing & Coverage
 .pytest_cache/
+**/.pytest_cache/
 .coverage
 htmlcov/
 
-# Logs (keep directory structure)
+# Logs
 logs/*.jsonl
+**/logs/*.jsonl
+
+# Flutter & Dart artifacts
+.dart_tool/
+**/.dart_tool/
+.flutter-plugins
+**/.flutter-plugins
+.flutter-plugins-dependencies
+**/.flutter-plugins-dependencies
+build/
+**/build/
+ephemeral/
+**/ephemeral/
+*.iml
+**/*.iml
 
 # System & IDE
 .DS_Store
+**/.DS_Store
 .idea/
 .vscode/
+
+# Vercel deployment artifacts
+.vercel/
+**/.vercel/
