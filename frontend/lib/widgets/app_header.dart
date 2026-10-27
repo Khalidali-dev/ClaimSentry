@@ -191,7 +191,7 @@ class AppHeader extends StatelessWidget {
   Widget _buildBackendStatusBadge(BuildContext context) {
     final statusColor =
         isBackendHealthy ? AppColors.approved : AppColors.warning;
-    final statusText = isBackendHealthy ? 'API Online :8000' : 'Offline / Standby';
+    final statusText = isBackendHealthy ? 'API Online' : 'Offline / Standby';
 
     return InkWell(
       onTap: onRefreshHealth,

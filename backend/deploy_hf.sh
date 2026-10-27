@@ -48,6 +48,7 @@ cp -r "$BACKEND_DIR/tests" "$TMP_DIR/"
 cp "$BACKEND_DIR/requirements.txt" "$TMP_DIR/"
 cp "$BACKEND_DIR/Dockerfile" "$TMP_DIR/"
 cp "$BACKEND_DIR/run.py" "$TMP_DIR/"
+cp "$BACKEND_DIR/main.py" "$TMP_DIR/"
 cp "$BACKEND_DIR/README.md" "$TMP_DIR/"
 cp "$BACKEND_DIR/.env.example" "$TMP_DIR/.env"
 

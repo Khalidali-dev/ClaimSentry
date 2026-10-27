@@ -21,7 +21,8 @@ def test_root_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["service"] == "ClaimSentry"
-    assert data["status"] == "operational"
+    assert data["status"] == "ClaimSentry Backend is online"
+    assert data["docs"] == "/docs"
 
 
 def test_run_endpoint_success():

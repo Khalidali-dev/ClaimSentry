@@ -18,15 +18,27 @@ app = FastAPI(
 )
 
 # Configure CORS for local development and production Vercel frontend deployments
-cors_origins_raw = os.getenv("CORS_ORIGINS", "*")
-allowed_origins = [o.strip() for o in cors_origins_raw.split(",") if o.strip()]
-if not allowed_origins:
-    allowed_origins = ["*"]
+cors_origins_raw = os.getenv("CORS_ORIGINS", "")
+allowed_origins = [
+    "https://claimsentry.vercel.app",
+    "https://frontend-liard-rho-psi7h6f8u2.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://localhost:7860",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:7860",
+]
+if cors_origins_raw:
+    for o in cors_origins_raw.split(","):
+        trimmed = o.strip()
+        if trimmed and trimmed not in allowed_origins:
+            allowed_origins.append(trimmed)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins if allowed_origins != ["*"] else ["*"],
-    allow_origin_regex=r"^https?://.*" if allowed_origins == ["*"] else None,
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,17 +84,20 @@ class RunResponse(BaseModel):
 
 
 @app.get("/")
+@app.head("/")
 def read_root():
     return {
+        "status": "ClaimSentry Backend is online",
         "service": "ClaimSentry",
-        "description": "Autonomous Healthcare Claim Denial Auditing & Appeal Engine",
-        "track": "Track 03: Reasoning Architecture",
-        "status": "operational",
+        "docs": "/docs",
+        "health": "/health",
         "endpoints": {
             "run": "POST /run",
             "health": "GET /health",
             "docs": "GET /docs",
         },
+        "description": "Autonomous Healthcare Claim Denial Auditing & Appeal Engine",
+        "track": "Track 03: Reasoning Architecture",
     }
 
 
