@@ -66,11 +66,13 @@ else
   echo "Deployment pushed successfully!"
 fi
 
+HF_SUBDOMAIN="$(echo "${HF_USERNAME}-${SPACE_NAME}" | tr '[:upper:]' '[:lower:]')"
+
 echo ""
 echo "============================================================"
 echo " Deployment Complete!"
 echo " Space Dashboard: https://huggingface.co/spaces/${HF_USERNAME}/${SPACE_NAME}"
-echo " Live API Endpoint: https://${HF_USERNAME,,}-${SPACE_NAME,,}.hf.space"
-echo " Health Check:     https://${HF_USERNAME,,}-${SPACE_NAME,,}.hf.space/health"
-echo " Swagger Docs:     https://${HF_USERNAME,,}-${SPACE_NAME,,}.hf.space/docs"
+echo " Live API Endpoint: https://${HF_SUBDOMAIN}.hf.space"
+echo " Health Check:     https://${HF_SUBDOMAIN}.hf.space/health"
+echo " Swagger Docs:     https://${HF_SUBDOMAIN}.hf.space/docs"
 echo "============================================================"

@@ -204,11 +204,11 @@ ClaimSentry/
    ```bash
    python run.py
    ```
-   The API will start on `http://0.0.0.0:8000`. Interactive documentation is available at `http://localhost:8000/docs`.
+   The API will start on `http://0.0.0.0:7860` (or the port specified by `$PORT`). Interactive documentation is available at `http://localhost:7860/docs`.
 
 ---
 
-### Option B: Docker Container
+### Option B: Docker Container (Hugging Face Spaces & Local)
 
 1. **Build the Docker image**:
    ```bash
@@ -217,35 +217,39 @@ ClaimSentry/
 
 2. **Run the container**:
    ```bash
-   docker run -p 8000:8000 --env-file .env claimsentry:latest
+   docker run -p 7860:7860 --env-file .env claimsentry:latest
    ```
 
 ---
 
 ## 6. API Verification & cURL Examples
 
-### 6.1 Health Check
+### 6.1 Root Status & Health Checks
 ```bash
-curl -X GET http://localhost:8000/health
+# Root status endpoint
+curl -X GET http://localhost:7860/
+
+# Health check
+curl -X GET http://localhost:7860/health
 ```
 
 ### 6.2 Execute Appeal Generation (Example 1: CO-50 Medical Necessity)
 ```bash
-curl -X POST http://localhost:8000/run \
+curl -X POST http://localhost:7860/run \
   -H "Content-Type: application/json" \
   -d @input_examples/example_1.json
 ```
 
 ### 6.3 Execute Appeal Generation (Example 2: CO-16 Missing Documentation)
 ```bash
-curl -X POST http://localhost:8000/run \
+curl -X POST http://localhost:7860/run \
   -H "Content-Type: application/json" \
   -d @input_examples/example_2.json
 ```
 
 ### 6.4 Execute Appeal Generation (Example 3: CO-18 Duplicate Claim / Modifier)
 ```bash
-curl -X POST http://localhost:8000/run \
+curl -X POST http://localhost:7860/run \
   -H "Content-Type: application/json" \
   -d @input_examples/example_3.json
 ```

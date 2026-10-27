@@ -36,6 +36,7 @@ COPY --chown=user input_examples/ input_examples/
 COPY --chown=user output_examples/ output_examples/
 COPY --chown=user tests/ tests/
 COPY --chown=user run.py .
+COPY --chown=user main.py .
 COPY --chown=user .env.example .env
 
 # Expose default Hugging Face Spaces HTTP port

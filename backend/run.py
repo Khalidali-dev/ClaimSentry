@@ -15,6 +15,9 @@ app = FastAPI(
     title="ClaimSentry",
     description="Autonomous Agentic Reasoning for US Healthcare Claim Denial Auditing & Appeal Generation (Track 03: Reasoning Architecture)",
     version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
 # Configure CORS for local development and production Vercel frontend deployments
@@ -38,7 +41,7 @@ if cors_origins_raw:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"^https://.*\.vercel\.app$",
+    allow_origin_regex=r"^(https://.*\.vercel\.app|https://.*\.hf\.space|http://localhost(:\d+)?|http://127\.0\.0\.1(:\d+)?)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,6 +88,8 @@ class RunResponse(BaseModel):
 
 @app.get("/")
 @app.head("/")
+@app.get("/api")
+@app.get("/api/")
 def read_root():
     return {
         "status": "ClaimSentry Backend is online",
@@ -102,9 +107,13 @@ def read_root():
 
 
 @app.get("/health")
+@app.head("/health")
+@app.get("/api/health")
+@app.head("/api/health")
 def health_check():
     return {
         "status": "healthy",
+        "backend": "ClaimSentry Backend is online",
         "meterless_url": os.getenv("METERLESS_BASE_URL", "http://127.0.0.1:8088/v1"),
         "zetaris_url": os.getenv("ZETARIS_REST_URL", "http://localhost:8888/api/v1.0"),
     }
@@ -112,6 +121,7 @@ def health_check():
 
 
 @app.post("/run", response_model=RunResponse)
+@app.post("/api/run", response_model=RunResponse)
 def run_appeal_pipeline(payload: RunRequest):
     req_id = payload.request_id or f"REQ-{uuid.uuid4().hex[:8].upper()}"
 
