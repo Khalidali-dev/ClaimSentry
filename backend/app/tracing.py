@@ -4,8 +4,12 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
-os.makedirs(LOGS_DIR, exist_ok=True)
+try:
+    LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+    os.makedirs(LOGS_DIR, exist_ok=True)
+except OSError:
+    LOGS_DIR = os.path.join("/tmp", "claimsentry_logs")
+    os.makedirs(LOGS_DIR, exist_ok=True)
 
 # Generate timestamped trace filename
 SESSION_TIMESTAMP = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")

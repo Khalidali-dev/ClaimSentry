@@ -48,16 +48,36 @@ ClaimSentry is configured for cloud deployment:
 * **Backend (Hugging Face Space)**: [https://khalidali-dev-claimsentry-backend.hf.space](https://khalidali-dev-claimsentry-backend.hf.space)
 
 ```
-┌────────────────────────────────────────────────────────┐          ┌─────────────────────────────────────────┐
-│                    Vercel Frontend                     │  HTTPS   │        Hugging Face Space Backend       │
-│              https://claimsentry.vercel.app            │ ───────> │  https://<user>-claimsentry.hf.space    │
-│              Flutter Web (SPA Rewrites)                │          │        FastAPI + Uvicorn (Port 7860)    │
-└────────────────────────────────────────────────────────┘          └─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           Unified Vercel Monorepo Deployment                    │
+│                                                                                 │
+│   Flutter Web SPA (Root /)                   Python Serverless Handler (/api/*) │
+│   Static Assets & Client Routing     <====>  FastAPI + Mangum ASGI Adapter      │
+│   https://claimsentry.vercel.app/            https://claimsentry.vercel.app/api │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+> [!TIP]
+> **Zero CORS / Single-Origin Architecture**: ClaimSentry supports deploying both the Flutter Web frontend and the FastAPI backend directly on **Vercel**. All API requests resolve to `/api/*` on the same origin, eliminating external hosting requirements and CORS configurations. Standalone container deployment on **Hugging Face Spaces** remains fully supported.
+
+---
+
+### Part 1: Unified Monorepo Deployment on Vercel (Recommended)
+
+The repository root includes [`vercel.json`](file:///vercel.json) and [`api/index.py`](file:///api/index.py) configured with `mangum` to execute the FastAPI backend as a serverless function:
+* **Frontend**: Built via `cd frontend && bash build.sh` with output at `frontend/build/web`.
+* **Backend API**: All requests to `/api/*` route to [`api/index.py`](file:///api/index.py).
+* **SPA Routing**: All other routes rewrite to `/index.html`.
+
+#### Deploying with Vercel CLI:
+```bash
+# Deploy entire monorepo (frontend + serverless backend) to Vercel production
+vercel --prod
 ```
 
 ---
 
-### Part 1: Deploying the Backend to Hugging Face Spaces
+### Part 2: Standalone Backend on Hugging Face Spaces (Alternative)
 
 The backend is packaged with a dedicated [`backend/Dockerfile`](file:///backend/Dockerfile) following Hugging Face Spaces Docker SDK guidelines (non-root user UID 1000 and HTTP port `7860`).
 

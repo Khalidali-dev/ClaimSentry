@@ -14,6 +14,16 @@ CSV_PATH = os.path.join(
     "data",
     "mock_billing_rules.csv",
 )
+if not os.path.exists(CSV_PATH):
+    alt_paths = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "backend", "data", "mock_billing_rules.csv"),
+        os.path.join(os.getcwd(), "backend", "data", "mock_billing_rules.csv"),
+        os.path.join(os.getcwd(), "data", "mock_billing_rules.csv"),
+    ]
+    for p in alt_paths:
+        if os.path.exists(p):
+            CSV_PATH = p
+            break
 
 
 class ZetarisClient:

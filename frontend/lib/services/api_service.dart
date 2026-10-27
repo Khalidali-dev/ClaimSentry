@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/claim_request.dart';
@@ -22,17 +23,39 @@ class ApiResult<T> {
 }
 
 class ApiService {
-  final String baseUrl;
+  final String? baseUrl;
   final http.Client _client;
 
   ApiService({
-    String? baseUrl,
+    this.baseUrl,
     http.Client? client,
-  })  : baseUrl = baseUrl ?? AppConfig.backendBaseUrl,
-        _client = client ?? http.Client();
+  }) : _client = client ?? http.Client();
+
+  Uri _getEndpoint(String path) {
+    if (baseUrl != null && baseUrl!.trim().isNotEmpty) {
+      final b = baseUrl!.trim();
+      final p = path.startsWith('/') ? path : '/$path';
+      if (b.startsWith('http://') || b.startsWith('https://')) {
+        final cleanBase =
+            b.endsWith('/') ? b.substring(0, b.length - 1) : b;
+        return Uri.parse('$cleanBase$p');
+      }
+      if (kIsWeb) {
+        final origin = Uri.base.origin;
+        final cleanBase = b.replaceAll(RegExp(r'^/|/$'), '');
+        final cleanPath = path.replaceAll(RegExp(r'^/'), '');
+        final rel = cleanBase.isEmpty ? cleanPath : '$cleanBase/$cleanPath';
+        return Uri.parse('$origin/$rel');
+      }
+      final cleanBase = b.replaceAll(RegExp(r'^/|/$'), '');
+      final cleanPath = path.replaceAll(RegExp(r'^/'), '');
+      return Uri.parse('http://localhost:7860/$cleanBase/$cleanPath');
+    }
+    return AppConfig.resolveUri(path);
+  }
 
   Future<ApiResult<RunResponse>> runPipeline(ClaimRequest request) async {
-    final endpoint = Uri.parse('$baseUrl/run');
+    final endpoint = _getEndpoint('run');
     final payloadJson = jsonEncode(request.toJson());
 
     try {
@@ -61,7 +84,8 @@ class ApiService {
             detailMessage = errorBody['detail'].toString();
           }
         } catch (_) {
-          detailMessage = response.body.isNotEmpty ? response.body : detailMessage;
+          detailMessage =
+              response.body.isNotEmpty ? response.body : detailMessage;
         }
         return ApiResult.failure(
           'Pipeline failed with status ${response.statusCode}: $detailMessage',
@@ -73,17 +97,17 @@ class ApiService {
       );
     } catch (e) {
       return ApiResult.failure(
-        'Unable to connect to ClaimSentry backend at $baseUrl/run.\n'
+        'Unable to connect to ClaimSentry backend at $endpoint.\n'
         'Details: $e\n\n'
-        '• Local: Ensure backend is running (cd backend && python run.py)\n'
-        '• Production: Verify your Hugging Face Space backend is running ($baseUrl/health)',
+        '• Local: Ensure backend is running (python run.py or api/index.py)\n'
+        '• Production: Verify serverless handler at $endpoint',
         isConnectionError: true,
       );
     }
   }
 
   Future<ApiResult<Map<String, dynamic>>> checkHealth() async {
-    final endpoint = Uri.parse('$baseUrl/health');
+    final endpoint = _getEndpoint('health');
     try {
       final response = await _client
           .get(
@@ -97,10 +121,13 @@ class ApiService {
             as Map<String, dynamic>;
         return ApiResult.success(decoded);
       } else {
-        return ApiResult.failure('Health check returned status ${response.statusCode}');
+        return ApiResult.failure(
+          'Health check returned status ${response.statusCode}',
+        );
       }
     } catch (e) {
-      return ApiResult.failure('Health check failed: $e', isConnectionError: true);
+      return ApiResult.failure('Health check failed: $e',
+          isConnectionError: true);
     }
   }
 }
